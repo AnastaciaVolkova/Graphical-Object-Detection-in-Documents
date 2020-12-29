@@ -15,8 +15,8 @@ class Rect:
 class DocumentObject:
     name: str
     pose: str
-    truncated: int
-    difficult: int
+    truncated: bool
+    difficult: bool
     bndbox: Rect
 
 
