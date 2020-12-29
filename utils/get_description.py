@@ -46,12 +46,15 @@ def get_documnt_object(file_xml):
     document_objects = list()
     for obj in root.findall('object'):
         name = obj.find('name').text
+        pose = obj.find('pose').text
+        truncated = obj.find('truncated').text
+        diffucult = obj.find('difficult').text
         bndbox = obj.find('bndbox')
         bndbox_rec = Rect(int(bndbox.find('xmin').text), \
                      int(bndbox.find('ymin').text), \
                      int(bndbox.find('xmax').text), \
                      int(bndbox.find('ymax').text))
-        document_objects.append(DocumentObject(name, "", bndbox_rec))
+        document_objects.append(DocumentObject(name, pose, truncated, diffucult, bndbox_rec))
     return document_objects
 
 
