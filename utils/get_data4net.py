@@ -30,6 +30,9 @@ class DocObjDataSet:
     def __getitem__(self, item):
         return self.getitem(item)
 
+    def __len__(self):
+        return len(self.xml_files)
+
     def getitem(self, idx):
         # Get objects, which are described in current xml document.
         objs = get_description.get_documnt_objects(self.xml_files[idx])
