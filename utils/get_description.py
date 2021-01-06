@@ -31,7 +31,7 @@ def main():
         raise "File %s doesn't exist" % file_xml
 
     # Parse xml and get document object data
-    doc_obj_lst = get_documnt_object(file_xml)
+    doc_obj_lst = get_documnt_objects(file_xml)
 
     for i in doc_obj_lst:
         print(i)
@@ -39,7 +39,7 @@ def main():
 
 # Function returns list of document objects datum (DocumentObject), which are contained in current xml.
 # file_xml - input xml file to parse
-def get_documnt_object(file_xml):
+def get_documnt_objects(file_xml):
     tree = ET.parse(file_xml)
     root = tree.getroot()
 
@@ -55,7 +55,7 @@ def get_documnt_object(file_xml):
                      int(bndbox.find('xmax').text), \
                      int(bndbox.find('ymax').text))
         document_objects.append(DocumentObject(name, pose, truncated, diffucult, bndbox_rec))
-    return document_objects
+    return {'filename': root.find('filename').text, 'objects': document_objects}
 
 
 if __name__ == "__main__":

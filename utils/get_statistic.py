@@ -17,7 +17,7 @@ def thread_task(id, xml_files_q, data_q):
         except Empty:
             print("Thread #%i finishes"%id)
             break
-        doc_obj_data = get_description.get_documnt_object(xml_file)
+        doc_obj_data = get_description.get_documnt_objects(xml_file)
         data_q.put(doc_obj_data)
         xml_files_q.task_done()
 
@@ -51,7 +51,7 @@ def get_statistics(xml_dir):
     while data_q.qsize() != 0:
         objs_in_xml = data_q.get()
         max_num_objects = max(max_num_objects, len(objs_in_xml))
-        for i in objs_in_xml:
+        for i in objs_in_xml['objects']:
             name.add(i.name)
             pose.add(i.pose)
             truncated.add(i.truncated)
