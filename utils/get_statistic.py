@@ -18,8 +18,7 @@ def thread_task(id, xml_files_q, data_q):
             print("Thread #%i finishes"%id)
             break
         doc_obj_data = get_description.get_documnt_object(xml_file)
-        for i in doc_obj_data:
-            data_q.put(i)
+        data_q.put(doc_obj_data)
         xml_files_q.task_done()
 
 
@@ -49,11 +48,12 @@ def get_statistics(xml_dir):
     difficult = set()
 
     while data_q.qsize() != 0:
-        i = data_q.get()
-        name.add(i.name)
-        pose.add(i.pose)
-        truncated.add(i.truncated)
-        difficult.add(i.difficult)
+        objs_in_xml = data_q.get()
+        for i in objs_in_xml:
+            name.add(i.name)
+            pose.add(i.pose)
+            truncated.add(i.truncated)
+            difficult.add(i.difficult)
 
     print("name %s" % name)
     print("pose %s" % pose)
