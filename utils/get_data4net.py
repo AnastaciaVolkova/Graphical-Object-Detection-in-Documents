@@ -6,7 +6,7 @@ from get_description import Rect
 
 
 # Returns train or test data: path to image file and objects boundaries and their names
-class DataLoader:
+class DocObjDataSet:
     max_objs_num = 64
 
     def __init__(self, image_directory, xml_directory):
@@ -21,28 +21,35 @@ class DataLoader:
 
     def __next__(self):
         if self.file_id < len(self.xml_files):
-            # Get objects, which are described in current xml document.
-            objs = get_description.get_documnt_objects(self.xml_files[self.file_id])
-
-            # Check if image file exists.
-            file_name = os.path.join(self.image_directory, objs['filename'])
-            if not file_name:
-                raise "File %s doesn't exist" % file_name
-
-            # Data for net: image file and its objects names and their bounds.
-            data4net = {'image_file': file_name, 'data': [dict()]*DataLoader.max_objs_num}
-
-            # Save all objects in current xml file.
-            for i, obj in enumerate(objs['objects']):
-                if i >= DataLoader.max_objs_num:
-                    raise "Number of objects in file exceeds the maximum number"
-                data4net['data'][i]['name'] = obj.name
-                data4net['data'][i]['bndbox'] = obj.bndbox
-
+            obj = self.getitem(self.file_id)
             self.file_id += 1
-            return data4net
+            return obj
         else:
             raise StopIteration
+
+    def __getitem__(self, item):
+        return self.getitem(item)
+
+    def getitem(self, idx):
+        # Get objects, which are described in current xml document.
+        objs = get_description.get_documnt_objects(self.xml_files[idx])
+
+        # Check if image file exists.
+        file_name = os.path.join(self.image_directory, objs['filename'])
+        if not file_name:
+            raise "File %s doesn't exist" % file_name
+
+        # Data for net: image file and its objects names and their bounds.
+        data4net = {'image_file': file_name, 'data': [dict()] * DocObjDataSet.max_objs_num}
+
+        # Save all objects in current xml file.
+        for i, obj in enumerate(objs['objects']):
+            if i >= DocObjDataSet.max_objs_num:
+                raise "Number of objects in file exceeds the maximum number"
+            data4net['data'][i]['name'] = obj.name
+            data4net['data'][i]['bndbox'] = obj.bndbox
+
+        return data4net
 
 
 def main():
@@ -66,9 +73,11 @@ def main():
         raise "Xml directory doesn't exist"
 
 
-    data_loader = DataLoader(image_directory, data_directory)
-    for i in data_loader:
-        print(i)
+    data_loader = DocObjDataSet(image_directory, data_directory)
+    for i, obj in enumerate(data_loader):
+        if i%100 == 0:
+            print(i)
+            print(obj)
 
 
 if __name__ == "__main__":
