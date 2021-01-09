@@ -1,13 +1,17 @@
 import sys
 import os
+import cv2
 import get_description
 from get_description import DocumentObject
 from get_description import Rect
+import transforms
+from matplotlib import pyplot as plt
 
 
 # Returns train or test data: path to image file and objects boundaries and their names
 class DocObjDataSet:
     max_objs_num = 64
+    image_size = 512
 
     def __init__(self, image_directory, xml_directory):
         self.xml_files = [os.path.join(xml_directory, f) for f in os.listdir(xml_directory)
@@ -39,11 +43,16 @@ class DocObjDataSet:
 
         # Check if image file exists.
         file_name = os.path.join(self.image_directory, objs['filename'])
-        if not file_name:
+        if not os.path.exists(file_name):
             raise "File %s doesn't exist" % file_name
 
+        image = cv2.imread(file_name)
         # Data for net: image file and its objects names and their bounds.
-        data4net = {'image_file': file_name, 'data': [dict()] * DocObjDataSet.max_objs_num}
+        data4net = {'image_file': image, 'data': [dict()] * DocObjDataSet.max_objs_num}
+
+        trans = [transforms.ToNormGreyFloat(), transforms.Resize(DocObjDataSet.image_size)]
+        for t in trans:
+            data4net = t(data4net)
 
         # Save all objects in current xml file.
         for i, obj in enumerate(objs['objects']):
@@ -75,8 +84,9 @@ def main():
     if not os.path.exists(data_directory):
         raise "Xml directory doesn't exist"
 
-
     data_loader = DocObjDataSet(image_directory, data_directory)
+    plt.imshow(data_loader[0]['image_file'], cmap='gray')
+
     for i, obj in enumerate(data_loader):
         if i%100 == 0:
             print(i)

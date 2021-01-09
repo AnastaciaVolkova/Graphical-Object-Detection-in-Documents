@@ -40,6 +40,8 @@ def main():
 # Function returns list of document objects datum (DocumentObject), which are contained in current xml.
 # file_xml - input xml file to parse
 def get_documnt_objects(file_xml):
+    filename = os.path.basename(os.path.splitext(file_xml)[0] + ".jpg")
+
     tree = ET.parse(file_xml)
     root = tree.getroot()
 
@@ -55,7 +57,7 @@ def get_documnt_objects(file_xml):
                      int(bndbox.find('xmax').text), \
                      int(bndbox.find('ymax').text))
         document_objects.append(DocumentObject(name, pose, truncated, diffucult, bndbox_rec))
-    return {'filename': root.find('filename').text, 'objects': document_objects}
+    return {'filename': filename, 'objects': document_objects}
 
 
 if __name__ == "__main__":
