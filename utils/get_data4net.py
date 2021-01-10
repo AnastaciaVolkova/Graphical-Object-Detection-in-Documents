@@ -48,18 +48,24 @@ class DocObjDataSet:
 
         image = cv2.imread(file_name)
         # Data for net: image file and its objects names and their bounds.
-        data4net = {'image_file': image, 'data': [dict()] * DocObjDataSet.max_objs_num}
-
-        trans = [transforms.ToNormGreyFloat(), transforms.Resize(DocObjDataSet.image_size)]
-        for t in trans:
-            data4net = t(data4net)
+        data4net = {'image_file': image, 'data': [None] * DocObjDataSet.max_objs_num}
 
         # Save all objects in current xml file.
         for i, obj in enumerate(objs['objects']):
             if i >= DocObjDataSet.max_objs_num:
                 raise "Number of objects in file exceeds the maximum number"
+            data4net['data'][i] = {}
             data4net['data'][i]['name'] = obj.name
             data4net['data'][i]['bndbox'] = obj.bndbox
+
+        for i in range(len(objs['objects']), DocObjDataSet.max_objs_num):
+            data4net['data'][i] = {}
+            data4net['data'][i]['name'] = 'NoObject'
+            data4net['data'][i]['bndbox'] = Rect(0, 0, 0, 0)
+
+        trans = [transforms.ToNormGreyFloat(), transforms.Resize(DocObjDataSet.image_size)]
+        for t in trans:
+            data4net = t(data4net)
 
         return data4net
 
@@ -86,11 +92,18 @@ def main():
 
     data_loader = DocObjDataSet(image_directory, data_directory)
     plt.imshow(data_loader[0]['image_file'], cmap='gray')
+    for d in data_loader[0]['data']:
+        if d['name'] == 'NoObject':
+            break
+        plt.scatter([d['bndbox'].xmin, d['bndbox'].xmax], [d['bndbox'].ymin, d['bndbox'].ymax], '*')
 
+    pass
+    '''
     for i, obj in enumerate(data_loader):
         if i%100 == 0:
             print(i)
             print(obj)
+    '''
 
 
 if __name__ == "__main__":
