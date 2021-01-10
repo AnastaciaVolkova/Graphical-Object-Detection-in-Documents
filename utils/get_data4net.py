@@ -1,8 +1,8 @@
 import sys
 import os
 import cv2
+import random
 import get_description
-from get_description import DocumentObject
 from get_description import Rect
 import transforms
 from matplotlib import pyplot as plt
@@ -91,12 +91,17 @@ def main():
         raise "Xml directory doesn't exist"
 
     data_loader = DocObjDataSet(image_directory, data_directory)
-    plt.imshow(data_loader[0]['image_file'], cmap='gray')
-    for d in data_loader[0]['data']:
+    idx = random.randint(0, 9333)
+    plt.imshow(data_loader[idx]['image_file'], cmap='gray')
+    for d in data_loader[idx]['data']:
         if d['name'] == 'NoObject':
             break
-        plt.scatter([d['bndbox'].xmin, d['bndbox'].xmax], [d['bndbox'].ymin, d['bndbox'].ymax], '*')
-
+        print(d['name'])
+        plt.plot(
+            [d['bndbox'].xmin, d['bndbox'].xmin, d['bndbox'].xmax, d['bndbox'].xmax],
+            [d['bndbox'].ymin, d['bndbox'].ymax, d['bndbox'].ymax, d['bndbox'].ymin],
+            '*')
+    plt.show()
     pass
     '''
     for i, obj in enumerate(data_loader):
