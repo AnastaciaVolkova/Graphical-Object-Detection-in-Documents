@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 class DocObjDataSet:
     max_objs_num = 64
     image_size = 512
+    cropped_size = 256
 
     def __init__(self, image_directory, xml_directory):
         self.xml_files = [os.path.join(xml_directory, f) for f in os.listdir(xml_directory)
@@ -63,7 +64,10 @@ class DocObjDataSet:
             data4net['data'][i]['name'] = 'NoObject'
             data4net['data'][i]['bndbox'] = Rect(0, 0, 0, 0)
 
-        trans = [transforms.ToNormGreyFloat(), transforms.Resize(DocObjDataSet.image_size)]
+        trans = [transforms.ToNormGreyFloat(),
+                 transforms.Resize(DocObjDataSet.image_size),
+                 transforms.Crop((DocObjDataSet.cropped_size, DocObjDataSet.cropped_size))]
+
         for t in trans:
             data4net = t(data4net)
 
@@ -91,9 +95,11 @@ def main():
         raise "Xml directory doesn't exist"
 
     data_loader = DocObjDataSet(image_directory, data_directory)
-    idx = random.randint(0, 9333)
-    plt.imshow(data_loader[idx]['image_file'], cmap='gray')
-    for d in data_loader[idx]['data']:
+    # idx = random.randint(0, 9333)
+    idx = 0
+    d = data_loader[idx]
+    plt.imshow(d['image_file'], cmap='gray')
+    for d in d['data']:
         if d['name'] == 'NoObject':
             break
         print(d['name'])
@@ -102,13 +108,6 @@ def main():
             [d['bndbox'].ymin, d['bndbox'].ymax, d['bndbox'].ymax, d['bndbox'].ymin],
             '*')
     plt.show()
-    pass
-    '''
-    for i, obj in enumerate(data_loader):
-        if i%100 == 0:
-            print(i)
-            print(obj)
-    '''
 
 
 if __name__ == "__main__":
