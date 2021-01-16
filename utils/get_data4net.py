@@ -3,22 +3,32 @@ import os
 import cv2
 import random
 import get_description
-from get_description import Rect
 import transforms
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
+import torch
+from matplotlib.pyplot import cm
+import numpy as np
 
 
 # Returns train or test data: path to image file and objects boundaries and their names
 class DocObjDataSet:
-    max_objs_num = 64
     image_size = 512
     cropped_size = 256
+    class_map = {
+        'figure': 0,
+        'logo': 1,
+        'table': 2,
+        'signature': 3,
+        'natural_image': 4
+    }
 
     def __init__(self, image_directory, xml_directory):
         self.xml_files = [os.path.join(xml_directory, f) for f in os.listdir(xml_directory)
                           if os.path.exists(os.path.join(xml_directory, f)) and os.path.splitext(f)[-1] == ".xml"]
         self.image_directory = image_directory
         self.file_id = 0
+        self.device = torch.device('cpu')
 
     def __iter__(self):
         self.file_id = 0
@@ -49,28 +59,28 @@ class DocObjDataSet:
 
         image = cv2.imread(file_name)
         # Data for net: image file and its objects names and their bounds.
-        data4net = {'image_file': image, 'data': [None] * DocObjDataSet.max_objs_num}
+        data4net = {'image_file': image,
+                    'data': {
+                        'boxes': torch.zeros((len(objs['objects']), 4), dtype=torch.float32, device=self.device),
+                        'labels': torch.zeros((len(objs['objects'])), dtype=torch.int64, device=self.device)}}
 
         # Save all objects in current xml file.
         for i, obj in enumerate(objs['objects']):
-            if i >= DocObjDataSet.max_objs_num:
-                raise "Number of objects in file exceeds the maximum number"
-            data4net['data'][i] = {}
-            data4net['data'][i]['name'] = obj.name
-            data4net['data'][i]['bndbox'] = obj.bndbox
-
-        for i in range(len(objs['objects']), DocObjDataSet.max_objs_num):
-            data4net['data'][i] = {}
-            data4net['data'][i]['name'] = 'NoObject'
-            data4net['data'][i]['bndbox'] = Rect(0, 0, 0, 0)
+            data4net['data']['labels'][i] = DocObjDataSet.class_map[obj.name]
+            c = np.array([obj.bndbox.xmin, obj.bndbox.ymin, obj.bndbox.xmax, obj.bndbox.ymax])
+            data4net['data']['boxes'][i] = torch.from_numpy(c)
 
         trans = [transforms.ToNormGreyFloat(),
                  transforms.Resize(DocObjDataSet.image_size),
                  transforms.Crop((DocObjDataSet.cropped_size, DocObjDataSet.cropped_size))]
 
         for t in trans:
-            data4net = t(data4net)
+            # if not isinstance(t, transforms.Crop) and not isinstance(t, transforms.ToNormGreyFloat):
+            if not isinstance(t, transforms.Crop):
+                data4net = t(data4net)
 
+        data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device, dtype=torch.float32)
+        data4net['image_file'] = torch.unsqueeze(data4net['image_file'], 0)
         return data4net
 
 
@@ -97,16 +107,17 @@ def main():
     data_loader = DocObjDataSet(image_directory, data_directory)
     # idx = random.randint(0, 9333)
     idx = 0
-    d = data_loader[idx]
-    plt.imshow(d['image_file'], cmap='gray')
-    for d in d['data']:
-        if d['name'] == 'NoObject':
-            break
-        print(d['name'])
-        plt.plot(
-            [d['bndbox'].xmin, d['bndbox'].xmin, d['bndbox'].xmax, d['bndbox'].xmax],
-            [d['bndbox'].ymin, d['bndbox'].ymax, d['bndbox'].ymax, d['bndbox'].ymin],
-            '*')
+    item = data_loader[idx]
+    fig, ax = plt.subplots(1)
+    ax.imshow(item['image_file'].cpu().squeeze(0).numpy(), cmap='gray')
+    color = iter(cm.rainbow(np.linspace(0, 1, item['data']['boxes'].shape[0])))
+
+    for obj_boxes in item['data']['boxes']:
+        ax.add_patch(
+            patches.Rectangle(obj_boxes[0:2],
+                              obj_boxes[2]-obj_boxes[0],
+                              obj_boxes[3]-obj_boxes[1],
+                              linewidth=1, edgecolor=next(color), facecolor='none'))
     plt.show()
 
 

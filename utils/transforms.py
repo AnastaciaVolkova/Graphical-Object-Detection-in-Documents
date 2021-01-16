@@ -1,5 +1,6 @@
 import cv2
 import random
+import torch
 
 
 class ToNormGreyFloat:
@@ -31,13 +32,7 @@ class Resize:
             h = self.scale
         image = cv2.resize(image, (int(w), int(h)))
 
-        for d in data:
-            if d['name'] == 'NoObject':
-                break
-            d['bndbox'].xmin *= k
-            d['bndbox'].ymin *= k
-            d['bndbox'].xmax *= k
-            d['bndbox'].ymax *= k
+        data['boxes'] *= k
 
         return {'image_file': image, 'data': data}
 
@@ -57,12 +52,7 @@ class Crop:
         image = image[shift_y:shift_y+self.cropped_size[0], shift_x:shift_x+self.cropped_size[1]]
 
         # Shift rectangle.
-        for d in data:
-            if d['name'] == 'NoObject':
-                break
-            d['bndbox'].xmin -= shift_x
-            d['bndbox'].ymin -= shift_y
-            d['bndbox'].xmax -= shift_x
-            d['bndbox'].ymax -= shift_y
+        for d in data['boxes']:
+            d -= torch.tensor([shift_x, shift_y, shift_x, shift_y])
 
         return {'image_file': image, 'data': data}
