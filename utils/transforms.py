@@ -53,6 +53,9 @@ class Crop:
 
         # Shift rectangle.
         for d in data['boxes']:
-            d -= torch.tensor([shift_x, shift_y, shift_x, shift_y])
+            d[0] -= shift_x
+            d[1] -= shift_y
+            d[2] -= shift_x
+            d[3] -= shift_y
 
         return {'image_file': image, 'data': data}

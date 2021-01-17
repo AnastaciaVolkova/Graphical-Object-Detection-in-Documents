@@ -28,7 +28,7 @@ class DocObjDataSet:
                           if os.path.exists(os.path.join(xml_directory, f)) and os.path.splitext(f)[-1] == ".xml"]
         self.image_directory = image_directory
         self.file_id = 0
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda')
 
     def __iter__(self):
         self.file_id = 0
@@ -76,8 +76,7 @@ class DocObjDataSet:
 
         for t in trans:
             # if not isinstance(t, transforms.Crop) and not isinstance(t, transforms.ToNormGreyFloat):
-            if not isinstance(t, transforms.Crop):
-                data4net = t(data4net)
+            data4net = t(data4net)
 
         data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device, dtype=torch.float32)
         data4net['image_file'] = torch.unsqueeze(data4net['image_file'], 0)
