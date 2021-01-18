@@ -23,12 +23,13 @@ class DocObjDataSet:
         'natural_image': 4
     }
 
-    def __init__(self, image_directory, xml_directory):
+    def __init__(self, image_directory, xml_directory, to_transform=True):
         self.xml_files = [os.path.join(xml_directory, f) for f in os.listdir(xml_directory)
                           if os.path.exists(os.path.join(xml_directory, f)) and os.path.splitext(f)[-1] == ".xml"]
         self.image_directory = image_directory
         self.file_id = 0
         self.device = torch.device('cuda')
+        self.to_transform = to_transform
 
     def __iter__(self):
         self.file_id = 0
@@ -70,17 +71,22 @@ class DocObjDataSet:
             c = np.array([obj.bndbox.xmin, obj.bndbox.ymin, obj.bndbox.xmax, obj.bndbox.ymax])
             data4net['data']['boxes'][i] = torch.from_numpy(c)
 
-        trans = [transforms.ToNormGreyFloat(),
-                 transforms.Resize(DocObjDataSet.image_size),
-                 transforms.Crop((DocObjDataSet.cropped_size, DocObjDataSet.cropped_size))]
+        if self.to_transform:
+            trans = [transforms.ToNormGreyFloat(),
+                     transforms.Resize(DocObjDataSet.image_size),
+                     transforms.Crop((DocObjDataSet.cropped_size, DocObjDataSet.cropped_size))]
 
-        for t in trans:
-            # if not isinstance(t, transforms.Crop) and not isinstance(t, transforms.ToNormGreyFloat):
-            data4net = t(data4net)
+            for t in trans:
+                data4net = t(data4net)
 
         data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device, dtype=torch.float32)
         data4net['image_file'] = torch.unsqueeze(data4net['image_file'], 0)
         return data4net
+
+    @staticmethod
+    def collate(x):
+        image, targets = zip(*[d.values() for d in x])
+        return {'image': image, 'target': targets}
 
 
 def main():
@@ -103,10 +109,10 @@ def main():
     if not os.path.exists(data_directory):
         raise "Xml directory doesn't exist"
 
-    data_loader = DocObjDataSet(image_directory, data_directory)
+    data_set = DocObjDataSet(image_directory, data_directory)
     # idx = random.randint(0, 9333)
     idx = 0
-    item = data_loader[idx]
+    item = data_set[idx]
     fig, ax = plt.subplots(1)
     ax.imshow(item['image_file'].cpu().squeeze(0).numpy(), cmap='gray')
     color = iter(cm.rainbow(np.linspace(0, 1, item['data']['boxes'].shape[0])))
