@@ -79,8 +79,10 @@ class DocObjDataSet:
             for t in trans:
                 data4net = t(data4net)
 
-        data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device, dtype=torch.float32)
-        data4net['image_file'] = torch.unsqueeze(data4net['image_file'], 0)
+            data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device, dtype=torch.float32)
+            data4net['image_file'] = torch.unsqueeze(data4net['image_file'], 0)
+        else:
+            data4net['image_file'] = torch.tensor(data4net['image_file'], device=self.device)
         return data4net
 
     @staticmethod
@@ -109,7 +111,7 @@ def main():
     if not os.path.exists(data_directory):
         raise "Xml directory doesn't exist"
 
-    data_set = DocObjDataSet(image_directory, data_directory)
+    data_set = DocObjDataSet(image_directory, data_directory, to_transform=False)
     # idx = random.randint(0, 9333)
     idx = 0
     item = data_set[idx]
